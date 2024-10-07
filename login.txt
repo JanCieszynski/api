@@ -1,0 +1,98 @@
+<?php
+// Ustawienia połączenia z bazą danych
+$host = 'localhost';
+$dbname = 'forum-wedkarskie'; // Podaj nazwę swojej bazy danych
+$email = 'e-mail';
+$name = 'nick'; // Podaj swoją nazwę użytkownika bazy danych
+$password = 'haslo'; // Podaj swoje hasło do bazy danych
+
+try {
+    // Tworzenie połączenia z bazą danych
+    $pdo = new PDO("mysql:host=$host;dbname=$dbname", $name, $password);
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+} catch (PDOException $e) {
+    die("Nie można połączyć się z bazą danych: " . $e->getMessage());
+}
+
+// Funkcja do dodawania użytkownika
+function addUser($name, $email, $password) {
+    global $pdo;
+
+    // Haszowanie hasła
+    $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+
+    $sql = "INSERT INTO user (name, email, password) VALUES (:name, :e-mail, :password)";
+    $stmt = $pdo->prepare($sql);
+    $stmt->bindParam(':name', $name);
+    $stmt->bindParam(':email', $email);
+    $stmt->bindParam(':password', $hashedPassword);
+
+    if ($stmt->execute()) {
+        return "Użytkownik został dodany.";
+    } else {
+        return "Wystąpił błąd podczas dodawania użytkownika.";
+    }
+}
+
+// Funkcja do pobierania użytkowników
+function getUsers() {
+    global $pdo;
+    
+    $sql = "SELECT name, email FROM users";
+    $stmt = $pdo->query($sql);
+    
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+// Przykład użycia
+
+// Dodawanie użytkownika
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_user'])) {
+    $name = $_POST['name'];
+    $email = $_POST['e-mail'];
+    $password = $_POST['password'];
+    
+    $message = addUser($name, $e-mail, $password);
+}
+
+// Pobieranie użytkowników
+$users = getUsers();
+?>
+
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Logowanie</title>
+</head>
+<body>
+    <h1>Dodaj Użytkownika</h1>
+    <form method="POST">
+        <input type="text" name="name" placeholder="Imię" required>
+        <input type="e-mail" name="e-mail" placeholder="E-mail" required>
+        <input type="password" name="password" placeholder="Hasło" required>
+        <button type="submit" name="add_user">Dodaj Użytkownika</button>
+    </form>
+    
+    <?php if (isset($message)) echo "<p>$message</p>"; ?>
+
+    <h1>Lista Użytkowników</h1>
+    <table>
+        <thead>
+            <tr>
+                <th>Imię</th>
+                <th>Email</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php foreach ($users as $user): ?>
+                <tr>
+                    <td><?php echo htmlspecialchars($user['name']); ?></td>
+                    <td><?php echo htmlspecialchars($user['e-mail']); ?></td>
+                </tr>
+            <?php endforeach; ?>
+        </tbody>
+    </table>
+</body>
+</html>
